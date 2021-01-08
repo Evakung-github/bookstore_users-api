@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Evakung-github/bookstore_users-api/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,5 +12,6 @@ var (
 // StartApplication 
 func StartApplication(){
 	mapUrls()
+	logger.Info("about to start the application...")
 	router.Run(":8080")
 }
