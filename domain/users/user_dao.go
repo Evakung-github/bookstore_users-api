@@ -16,6 +16,7 @@ const (
 	queryUpdateUser = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
 	queryDeleteUser = "DELETE FROM users WHERE id = ?;"
 	queryFindUserByStatus = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE status=?;"
+	queryFindByEmailAndPassword = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE email=? AND password=? AND status=?"
 )
 var (
 	usersDB = make(map[int64]*User)
@@ -37,8 +38,7 @@ func (user *User) Get() *errors.RestErr{
 			fmt.Sprintf("error when trying to get user %d: %s",user.Id,err.Error()))
 	}
 
-	return nil
-	
+	return nil	
 }
 func (user *User) Save() *errors.RestErr{
 	stmt,err := users_db.Client.Prepare(queryInsertUser)
@@ -121,4 +121,23 @@ func (user *User) FindByStatus(status string) ([]User,*errors.RestErr) {
 		return nil,errors.NewNotFoundError(fmt.Sprintf("no users matching status %s", status))
 	}
 	return results,nil
+}
+
+func (user *User) FindByEmailAndPassword() *errors.RestErr{
+	stmt,err := users_db.Client.Prepare(queryFindByEmailAndPassword)
+	if err != nil{
+		logger.Error("error when trying to prepare get user by email and passwod statement", err)
+		return errors.NewInternalServerErr("database error")
+	}
+	defer stmt.Close()
+	
+	result := stmt.QueryRow(user.Email,user.Password,StatusActive)
+
+	if err := result.Scan(&user.Id,&user.FirstName,&user.LastName,&user.Email,&user.DataCreated,&user.Status);err !=nil{
+		logger.Error("error when trying to get user by id", err)
+		return errors.NewInternalServerErr(
+			fmt.Sprintf("error when trying to get user by email and password %d: %s",user.Id,err.Error()))
+	}
+
+	return nil	
 }
